@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-mysql - Munin plugin to display misc MySQL server status 
+mysql - Munin plugin to display misc MySQL server status
 
 =head1 APPLICABLE SYSTEMS
 
@@ -25,16 +25,16 @@ Non-default example:
     env.mysqlpassword geheim
 
 
-Warning and critical values can be set via the environment in the usual way. 
-For example: 
- 
-  [mysql_replication] 
-    env.seconds_behind_master_warning 300 
+Warning and critical values can be set via the environment in the usual way.
+For example:
+
+  [mysql_replication]
+    env.seconds_behind_master_warning 300
     env.seconds_behind_master_critical 600
 
 =head2 Multiple instances
 
-This plugin can monitor many instances of MySQL. See 
+This plugin can monitor many instances of MySQL. See
 L<http://github.com/kjellm/munin-mysql/issues#issue/22> for a hint on
 how this can be configured.
 
@@ -70,7 +70,7 @@ or:
 
 =head2 InnoDB
 
-The statistics from innodb are mainly collected from the command 
+The statistics from innodb are mainly collected from the command
 
   SHOW ENGINE INNODB STATUS
 
@@ -185,14 +185,14 @@ my %defaults = (
 # $graph{NAME} => {
 #     config => {
 #         # The global attributes for this graph
-#         global_attrs => {} 
+#         global_attrs => {}
 #         # Attributes common to all data sources in this graph
 #         data_source_attrs => {}
 #     },
 #     data_sources => [
-#         # NAME - The name of the data source (e.g. variable names 
+#         # NAME - The name of the data source (e.g. variable names
 #         #        from SHOW STATUS)
-#         # DATA_SOURCE_ATTRS - key-value pairs with data source 
+#         # DATA_SOURCE_ATTRS - key-value pairs with data source
 #         #                     attributes
 #         {name => 'NAME', (DATA_SOURCE_ATTRS)},
 #         {...},
@@ -218,8 +218,8 @@ sub main {
         'config'   => \&config,
         'show'     => \&show,
     );
-    
-    die "Unknown command: $command" 
+
+    die "Unknown command: $command"
         unless exists $command_map{$command};
 
     build_instance();
@@ -255,7 +255,7 @@ sub autoconf {
     if ($@) {
         my $err = $@;
         $err =~ s{\s at \s \S+ \s line .*}{}xms;
-        print "no ($err)\n"; 
+        print "no ($err)\n";
         return 0;
     }
     print "yes\n";
@@ -302,13 +302,13 @@ sub show {
     my $graph_name = shift;
 
     my $graph = $graphs{$graph_name};
-    
+
     die "Can't show data for '$graph_name' because InnoDB is disabled."
         if $graph_name =~ /innodb_/ && $data->{_innodb_disabled};
 
     for my $ds (@{$graph->{data_sources}}) {
-        my $value = exists $ds->{value} 
-            ? $ds->{value}($data) 
+        my $value = exists $ds->{value}
+            ? $ds->{value}($data)
                 : $data->{$ds->{name}};
 
         printf "%s.value %s\n", clean_fieldname($ds->{name}), defined($value) ? $value : 'U';
@@ -355,7 +355,7 @@ sub collect_data {
     $data->{slave_running}         = 0;
     $data->{slave_stopped}         = 0;
     $data->{seconds_behind_master} = 0;
-    
+
     # Set up defaults in case binlog is not enabled
     $data->{ma_binlog_size} = 0;
 
@@ -427,7 +427,7 @@ sub update_master {
     while (my $row = $sth->fetch) {
         $data->{ma_binlog_size} += $row->[1];
     }
-    
+
     $sth->finish();
 }
 
@@ -458,6 +458,11 @@ sub update_slave {
             ? $data->{seconds_behind_master} : 0;
     $data->{slave_stopped} = ($data->{slave_sql_running} eq 'Yes')
             ? 0 : $data->{seconds_behind_master};
+
+    $data->{slave_sql_stopped} = ($data->{slave_sql_running} eq 'Yes') ? 0 : 1;
+    $data->{slave_io_stopped} = ($data->{slave_io_running} eq 'Yes') ? 0 : 1;
+    $data->{slave_sql_running} = ($data->{slave_sql_running} eq 'Yes') ? 1 : 0;
+    $data->{slave_io_running} = ($data->{slave_io_running} eq 'Yes') ? 1 : 0;
 }
 
 # Overwrites seconds_behind_master collected from SHOW SLAVE STATUS
@@ -564,14 +569,14 @@ sub parse_innodb_status {
 
     # Add a dummy section to the end in case the innodb status output
     # has been truncated (Happens for status > 64K characters)
-    $_ .= "\n----------\nDUMMY\n----------\n"; 
+    $_ .= "\n----------\nDUMMY\n----------\n";
 
     my %section_map = (
 
         'BUFFER POOL AND MEMORY'      => \&parse_buffer_pool_and_memory,
         'INDIVIDUAL BUFFER POOL INFO' => \&skip,
         'FILE I/O'                    => \&parse_file_io,
-        'INSERT BUFFER AND ADAPTIVE HASH INDEX' 
+        'INSERT BUFFER AND ADAPTIVE HASH INDEX'
             => \&parse_insert_buffer_and_adaptive_hash_index,
         'LATEST DETECTED DEADLOCK'    => \&skip,
         'LATEST FOREIGN KEY ERROR'    => \&skip,
@@ -617,9 +622,9 @@ my $innodb_bigint_rx = qr{([[a-fA-F\d]+)(?: (\d+))?};
 # ------------------
 # ---TRANSACTION 1 2450838625, ACTIVE 831 sec, OS thread id 27 fetching rows, thread declared inside InnoDB 104
 
-sub match_new_section { 
+sub match_new_section {
     return m/\G
-             -+\n                 # --------------------------- 
+             -+\n                 # ---------------------------
              (?= [A-Z\/ ]+\n      # SECTION NAME
                  [=-]+\n)/gcx;    # --------------------------- ('=' on end of output)
 }
@@ -631,7 +636,7 @@ sub skip_line    { return m/\G.*\n/gc; }
 sub skip_heading {
     # Heading is 6 lines
     for my $foo (1...6) {
-        skip_line or die('Parse error'); 
+        skip_line or die('Parse error');
     }
 }
 
@@ -815,7 +820,7 @@ sub handle_incomplete_innodb_status {
         . "Several of the InnoDB graphs might be affected by this."
         . "You can use innotop to fix this issue by pressing 'D' "
         . "to enter deadlock mode and then 'w' to wipe the deadlocks.";
-        
+
     # FIX Is it possible to find some of the missing values from SHOW
     # STATUS?
 }
@@ -825,4 +830,3 @@ exit main() unless caller;
 
 
 1;
-
